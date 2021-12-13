@@ -430,7 +430,7 @@ void MintsHelper::one_body_ao_computer(std::vector<std::shared_ptr<OneBodyAOInt>
     double **outp = out->pointer();
 
 // Loop it
-#pragma omp parallel for schedule(guided) num_threads(nthread)
+#pragma omp parallel for schedule(dynamic) num_threads(nthread)
     for (size_t MU = 0; MU < bs1->nshell(); ++MU) {
         const size_t num_mu = bs1->shell(MU).nfunction();
         const size_t index_mu = bs1->shell(MU).function_index();
