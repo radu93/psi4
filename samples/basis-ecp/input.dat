@@ -42,7 +42,7 @@ set basis_guess 3-21g
 try:
     energy('scf')
 except ValidationError as e:
-
+    pass
 
 # this won't work with basis_guess yet
 #basis {
