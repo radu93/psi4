@@ -435,7 +435,7 @@ omp_set_num_threads(nthread);
 
 #pragma omp parallel
 {
-    #pragma omp single
+    #pragma omp single nowait
     {
         for (size_t MU = 0; MU < bs1->nshell(); ++MU) {
             #pragma omp task firstprivate(MU)      
