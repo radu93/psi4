@@ -429,51 +429,65 @@ void MintsHelper::one_body_ao_computer(std::vector<std::shared_ptr<OneBodyAOInt>
 
     double **outp = out->pointer();
 
-// Loop it
-#pragma omp parallel for schedule(dynamic) num_threads(nthread)
-    for (size_t MU = 0; MU < bs1->nshell(); ++MU) {
-        const size_t num_mu = bs1->shell(MU).nfunction();
-        const size_t index_mu = bs1->shell(MU).function_index();
+    // printf("num threads: %zu, iters: %zu\n", nthread, bs1->nshell());
 
-        size_t rank = 0;
-#ifdef _OPENMP
-        rank = omp_get_thread_num();
-#endif
+omp_set_num_threads(nthread);
 
-        if (symm) {
-            // Triangular
-            for (size_t NU = 0; NU <= MU; ++NU) {
-                const size_t num_nu = bs2->shell(NU).nfunction();
-                const size_t index_nu = bs2->shell(NU).function_index();
+#pragma omp parallel
+{
+    #pragma omp single
+    {
+        for (size_t MU = 0; MU < bs1->nshell(); ++MU) {
+            #pragma omp task firstprivate(MU)      
+            {
+                const size_t num_mu = bs1->shell(MU).nfunction();
+                const size_t index_mu = bs1->shell(MU).function_index();
 
-                ints[rank]->compute_shell(MU, NU);
+                size_t rank = 0;
+        #ifdef _OPENMP
+                rank = omp_get_thread_num();
+        #endif
 
-                size_t index = 0;
-                for (size_t mu = index_mu; mu < (index_mu + num_mu); ++mu) {
-                    for (size_t nu = index_nu; nu < (index_nu + num_nu); ++nu) {
-                        outp[nu][mu] = outp[mu][nu] = ints_buff[rank][index++];
-                    }
-                }
-            }  // End NU
-        }      // End Symm
-        else {
-            // Rectangular
-            for (size_t NU = 0; NU < bs2->nshell(); ++NU) {
-                const size_t num_nu = bs2->shell(NU).nfunction();
-                const size_t index_nu = bs2->shell(NU).function_index();
+                // printf("rank %zu M %zu\n", rank, MU);
 
-                ints[rank]->compute_shell(MU, NU);
+                if (symm) {
+                    // Triangular
+                    for (size_t NU = 0; NU <= MU; ++NU) {
+                        const size_t num_nu = bs2->shell(NU).nfunction();
 
-                size_t index = 0;
-                for (size_t mu = index_mu; mu < (index_mu + num_mu); ++mu) {
-                    for (size_t nu = index_nu; nu < (index_nu + num_nu); ++nu) {
-                        // printf("%zu %zu | %zu %zu | %lf\n", MU, NU, mu, nu, ints_buff[rank][index]);
-                        outp[mu][nu] = ints_buff[rank][index++];
-                    }
-                }
-            }  // End NU
-        }      // End Rectangular
-    }          // End Mu
+                        const size_t index_nu = bs2->shell(NU).function_index();
+                        ints[rank]->compute_shell(MU, NU);
+
+                        size_t index = 0;
+                        for (size_t mu = index_mu; mu < (index_mu + num_mu); ++mu) {
+                            for (size_t nu = index_nu; nu < (index_nu + num_nu); ++nu) {
+                                outp[nu][mu] = outp[mu][nu] = ints_buff[rank][index++];
+                            }
+                        }
+                    }  // End NU
+                }      // End Symm
+                else {
+                    // Rectangular
+                    for (size_t NU = 0; NU < bs2->nshell(); ++NU) {
+                        const size_t num_nu = bs2->shell(NU).nfunction();
+                        const size_t index_nu = bs2->shell(NU).function_index();
+
+                        ints[rank]->compute_shell(MU, NU);
+
+                        size_t index = 0;
+                        for (size_t mu = index_mu; mu < (index_mu + num_mu); ++mu) {
+                            for (size_t nu = index_nu; nu < (index_nu + num_nu); ++nu) {
+                                // printf("%zu %zu | %zu %zu | %lf\n", MU, NU, mu, nu, ints_buff[rank][index]);
+                                outp[mu][nu] = ints_buff[rank][index++];
+                            }
+                        }
+                    }  // End NU
+                }      // End Rectangular
+            }
+        }          // End Mu
+        #pragma omp taskwait
+    }
+}
 }
 void MintsHelper::grad_two_center_computer(std::vector<std::shared_ptr<OneBodyAOInt>> ints, SharedMatrix D,
                                            SharedMatrix out) {
