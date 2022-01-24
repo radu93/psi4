@@ -1270,7 +1270,7 @@ void DFHelper::compute_sparse_pQq_blocking_p_symm(const size_t start, const size
 
 #pragma omp single
 {
-#pragma omp taskloop grainsize(2)
+#pragma omp taskloop grainsize(4)
     for (size_t MU = start; MU <= stop; MU++) {
         int rank = 0;
 #ifdef _OPENMP
@@ -1627,7 +1627,7 @@ void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* me
 
 #pragma omp single
 {
-#pragma omp taskloop grainsize(2)
+#pragma omp taskloop grainsize(4)
     for (size_t j = begin; j <= end; j++) {
         size_t mi = symm_small_skips_[j];
         size_t si = small_skips_[j];
@@ -1642,7 +1642,7 @@ void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* me
 
 #pragma omp single
 {
-#pragma omp taskloop grainsize(2)
+#pragma omp taskloop grainsize(4)
     for (size_t omu = begin; omu <= end; omu++) {
         for (size_t Q = 0; Q < naux_; Q++) {
             for (size_t onu = omu + 1; onu < nbf_; onu++) {
@@ -2135,7 +2135,7 @@ void DFHelper::first_transform_pQq(size_t bsize, size_t bcount, size_t block_siz
 
 #pragma omp single
 {
-#pragma omp taskloop grainsize(2)
+#pragma omp taskloop grainsize(4)
     for (size_t k = 0; k < nbf_; k++) {
         // truncate transformation matrix according to fun_mask
         size_t sp_size = small_skips_[k];
