@@ -1266,7 +1266,7 @@ void DFHelper::compute_sparse_pQq_blocking_p_symm(const size_t start, const size
     }
 
 // Block over p in pQq 3-index integrals
-#pragma omp parallel for schedule(guided) num_threads(nthread)
+#pragma omp parallel for schedule(static) num_threads(nthread)
     for (size_t MU = start; MU <= stop; MU++) {
         int rank = 0;
 #ifdef _OPENMP
@@ -1617,7 +1617,7 @@ void DFHelper::contract_metric_AO_core(double* Qpq, double* metp) {
 void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* metp, size_t begin, size_t end) {
     // loop and contract
     size_t startind = symm_big_skips_[begin];
-#pragma omp parallel for num_threads(nthreads_) schedule(guided)
+#pragma omp parallel for num_threads(nthreads_) schedule(static)
     for (size_t j = begin; j <= end; j++) {
         size_t mi = symm_small_skips_[j];
         size_t si = small_skips_[j];
@@ -2115,7 +2115,7 @@ void DFHelper::transform() {
 void DFHelper::first_transform_pQq(size_t bsize, size_t bcount, size_t block_size, double* Mp, double* Tp, double* Bp,
                                    std::vector<std::vector<double>>& C_buffers) {
 // perform first contraction on pQq, thread over p.
-#pragma omp parallel for schedule(guided) num_threads(nthreads_)
+#pragma omp parallel for schedule(static) num_threads(nthreads_)
     for (size_t k = 0; k < nbf_; k++) {
         // truncate transformation matrix according to fun_mask
         size_t sp_size = small_skips_[k];
