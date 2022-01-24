@@ -1266,7 +1266,11 @@ void DFHelper::compute_sparse_pQq_blocking_p_symm(const size_t start, const size
     }
 
 // Block over p in pQq 3-index integrals
-#pragma omp parallel for schedule(guided) num_threads(nthread)
+#pragma omp parallel
+
+#pragma omp single
+{
+#pragma omp taskloop
     for (size_t MU = start; MU <= stop; MU++) {
         int rank = 0;
 #ifdef _OPENMP
@@ -1306,6 +1310,7 @@ void DFHelper::compute_sparse_pQq_blocking_p_symm(const size_t start, const size
             }
         }
     } // ends MU loop
+}
 }
 
 void DFHelper::compute_sparse_pQq_blocking_p_symm_abw(const size_t start, const size_t stop, double* just_Mp, double* param_Mp,
@@ -1617,7 +1622,12 @@ void DFHelper::contract_metric_AO_core(double* Qpq, double* metp) {
 void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* metp, size_t begin, size_t end) {
     // loop and contract
     size_t startind = symm_big_skips_[begin];
-#pragma omp parallel for num_threads(nthreads_) schedule(guided)
+
+#pragma omp parallel
+
+#pragma omp single
+{
+#pragma omp taskloop
     for (size_t j = begin; j <= end; j++) {
         size_t mi = symm_small_skips_[j];
         size_t si = small_skips_[j];
@@ -1626,8 +1636,13 @@ void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* me
         size_t skip2 = symm_big_skips_[j] - startind;
         C_DGEMM('N', 'N', naux_, mi, naux_, 1.0, metp, naux_, &Qpq[skip2], mi, 0.0, &Ppq[skip1 + jump], si);
     }
+}
 // copy upper-to-lower
-#pragma omp parallel for num_threads(nthreads_) schedule(static)
+#pragma omp parallel
+
+#pragma omp single
+{
+#pragma omp taskloop
     for (size_t omu = begin; omu <= end; omu++) {
         for (size_t Q = 0; Q < naux_; Q++) {
             for (size_t onu = omu + 1; onu < nbf_; onu++) {
@@ -1639,6 +1654,7 @@ void DFHelper::contract_metric_AO_core_symm(double* Qpq, double* Ppq, double* me
             }
         }
     }
+}
 }
 void DFHelper::copy_upper_lower_wAO_core_symm(double* Qpq, double* Ppq, size_t begin, size_t end) {
     // copy out of symm
@@ -2115,7 +2131,11 @@ void DFHelper::transform() {
 void DFHelper::first_transform_pQq(size_t bsize, size_t bcount, size_t block_size, double* Mp, double* Tp, double* Bp,
                                    std::vector<std::vector<double>>& C_buffers) {
 // perform first contraction on pQq, thread over p.
-#pragma omp parallel for schedule(guided) num_threads(nthreads_)
+#pragma omp parallel
+
+#pragma omp single
+{
+#pragma omp taskloop
     for (size_t k = 0; k < nbf_; k++) {
         // truncate transformation matrix according to fun_mask
         size_t sp_size = small_skips_[k];
@@ -2136,6 +2156,7 @@ void DFHelper::first_transform_pQq(size_t bsize, size_t bcount, size_t block_siz
         C_DGEMM('N', 'N', block_size, bsize, sp_size, 1.0, &Mp[jump], sp_size, &C_buffers[rank][0], bsize, 0.0,
                 &Tp[k * block_size * bsize], bsize);
     }
+}
 }
 
 void DFHelper::put_transformations_Qpq(int begin, int end, int wsize, int bsize, double* Fp, int ind, bool bleft) {
